@@ -1,0 +1,107 @@
+---
+title: "Engagement Analysis - UMAA"
+author: "Sandeep Gangarapu"
+output: html_document
+---
+  
+  
+```{r echo=FALSE, warning=FALSE}
+suppressPackageStartupMessages(
+  {
+    library(ggplot2)
+    library(dplyr)
+    library(tidyr)
+    library(DataExplorer)
+    library(dlookr)
+    library(corrplot)
+
+  })
+
+# https://cran.r-project.org/web/packages/dlookr/vignettes/EDA.html
+# https://towardsdatascience.com/simple-fast-exploratory-data-analysis-in-r-with-dataexplorer-package-e055348d9619
+```
+
+
+
+We first look at all the files in the database
+
+```{r echo=FALSE, warning=FALSE}
+setwd("G:\\My Drive\\Research\\UMAA\\Data\\files\\Initial Data Files Cleaned")
+
+membership <- read.csv("membership_cleaned.csv")
+individual <- read.csv("individual_info_cleaned.csv")
+engagement <- read.csv("engagement_cleaned.csv")
+
+
+```
+
+
+
+```{r}
+a <- individual %>% filter(MEMBERSHIP_STATUS_CODE=='C' & MEMBERSHIP_TYPE_CODE=='L') %>% select(ID_DEMO, FIRST_EVER_START_DATE, EXP_DATE_LAST_MEMBERSHIP, IN_TC_METRO_AREA)
+
+
+eng_l_c <- merge(engagement, a) 
+
+sub <- eng_l_c%>% select(ID_DEMO, YEAR_FISCAL, ENGAGEMENT_LEVEL_LIFE)
+
+sort(table((eng_l_c$ENGAGEMENT_LEVEL_LIFE)))
+#prop.table(c$MEMBERSHIP_LEVEL)
+
+d <- c %>% filter(AMOUNT_PAID!=0 & IN_TC_METRO_AREA=='Y') 
+d <- c %>% filter(AMOUNT_PAID!=0) 
+
+length(unique(d$ID_DEMO))
+sort(table(droplevels(d$MEMBERSHIP_LEVEL)))
+
+table(d$IN_TC_METRO_AREA)
+
+a <- engagement %>% select(ID_DEMO) %>% unique()
+b <- individual %>% select(ID_SPOUSE) %>% unique()
+c <- merge(a, b, by.y='ID_SPOUSE', by.x='ID_DEMO') 
+
+eng_sub <- engagement %>% filter(YEAR_FISCAL!=1919) 
+eng_sub_1 <- eng_sub %>% group_by(ID_DEMO) %>% summarise(a = length(unique(ENGAGEMENT_TOTAL_LIFE)))
+eng_cor <- eng_sub %>% select(-c(ENGAGEMENT_LEVEL_ANNUAL, ENGAGEMENT_LEVEL_LIFE, ID_DEMO, YEAR_FISCAL, ENGAGEMENT_TOTAL_ANNUAL, ENGAGEMENT_TOTAL_LIFE))
+eng_sub %>% filter(ID_DEMO =='008C9982F9FD0560264C5149884E78DE') %>% select(ID_DEMO, YEAR_FISCAL, ENGAGEMENT_TOTAL_LIFE)
+corrplot(cor(eng_cor),  type="upper", method = "number")
+
+
+a <- individual  %>% select(ID_DEMO, FIRST_EVER_START_DATE, EXP_DATE_LAST_MEMBERSHIP, IN_TC_METRO_AREA, AGE, IN_TC_METRO_AREA, MEMBERSHIP_TYPE_CODE, MEMBERSHIP_STATUS_CODE)
+
+
+eng_l_c <- merge(engagement, a) %>% filter(YEAR_FISCAL!=1919) %>% mutate(eng_l = ENGAGEMENT_TOTAL_LIFE - UMAA_MEMBER_LIFE, eng_a = ENGAGEMENT_TOTAL_ANNUAL - UMAA_MEMBER_ANNUAL)
+
+eng_l_sub <- eng_l_c %>% filter(MEMBERSHIP_STATUS_CODE=='P') %>% mutate(mem_type = ifelse(MEMBERSHIP_TYPE_CODE=='A', 0, 1)) %>% mutate(in_tc = ifelse(IN_TC_METRO_AREA=='N', 0, 1))
+
+cor(eng_l_sub$eng_l, eng_l_sub$in_tc)
+```
+
+Checking the distribution of engagement metrics for different types of members
+
+emails
+
+```{r}
+
+email_agg <- emails[, .(clicked = sum(Status_Clicked), tot = length(Status_Clicked), perc = sum(Status_Clicked)/length(Status_Clicked)) , ID_DEMO]
+
+
+ind_sub <- individual %>% select(ID_DEMO, MEMBERSHIP_STATUS_CODE, MEMBERSHIP_TYPE_CODE)
+email_data <- merge(email_agg, ind_sub, all.x = TRUE)
+annual <- email_data %>% filter(MEMBERSHIP_TYPE_CODE=='A')
+hist(annual$perc)
+life <- email_data %>% filter(MEMBERSHIP_TYPE_CODE=='L')
+hist(life$perc)
+
+t.test(annual$perc, life$perc)
+```
+
+
+events
+
+```{r}
+event_agg <- events %>% group_by(ID_DEMO) %>% summarise(tot_events = n())
+email_data <- merge(email_agg, ind_sub, all.x = TRUE)
+
+```
+

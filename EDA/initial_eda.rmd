@@ -1,0 +1,149 @@
+---
+title: "Data dictionary, Exploratory Data Analysis - UMAA"
+author: "Sandeep Gangarapu"
+output: html_document
+---
+  
+  
+```{r echo=FALSE, warning=FALSE}
+suppressPackageStartupMessages(
+  {
+    library(ggplot2)
+    library(dplyr)
+    library(tidyr)
+    library(DataExplorer)
+    library(dlookr)
+    library(data.table)
+  })
+
+# https://cran.r-project.org/web/packages/dlookr/vignettes/EDA.html
+# https://towardsdatascience.com/simple-fast-exploratory-data-analysis-in-r-with-dataexplorer-package-e055348d9619
+```
+
+
+We first look at all the files in the database
+
+```{r echo=FALSE, warning=FALSE}
+setwd("G:\\My Drive\\Research\\UMAA\\Data\\files\\Initial Data Files Cleaned")
+
+#membership <- read.csv("membership_cleaned.csv")
+#individual <- read.csv("individual_info_cleaned.csv")
+#academic <- read.csv("academic_cleaned.csv")
+emails <- fread("emails_cleaned.csv")
+#events <- read.csv("events_cleaned.csv")
+#engagement <- read.csv("engagement_cleaned.csv")
+
+```
+
+individual_info_cleaned.csv - This file contain individual data and the attributes.
+
+"ID_DEMO" - Unique individual identifier
+"ID_SPOUSE"
+"MARITAL_STATUS"          
+"GENDER"
+"BIRTH_YEAR"
+"AGE"
+"ZIP_CODE"
+"IN_TC_METRO_AREA"
+"HOUSEHOLD_INCOME" 
+"MOST_RECENT_COLLEGE" - Which college they graduated from (CLA, MED, CSE)
+"MOST_RECENT_GRAD_YEAR"
+"ATHLETIC_INTEREST"
+"TRAVEL_INTEREST"
+"MEMBERSHIP_TYPE_CODE" - A(annual), L(lifetime), X??
+"MEMBERSHIP_STATUS_CODE" - C, P??  
+"FIRST_EVER_START_DATE"
+"EXP_DATE_LAST_MEMBERSHIP"
+
+Primary Key = (ID_DEMO)
+
+
+membership_cleaned.csv - This file has details on all the purchases of membership ever. Who purchase it, amount paid, when, form of payment, what type of memership etc.
+
+
+"ID_DEMO" - Unique ID of the person       
+"APPEAL_CODE" - ??
+"FORM_OF_PAYMENT" - Cash or Creditcard 
+"AMOUNT_PAID" - Money paid in $
+"TRANSACTION_DATE" - Date of amount paid
+"MEMBERSHIP_LEVEL" - Type of membership (Annual, lifetime etc)   
+"ID_OF_RECORD_WITH_RELATIONSHIP" - Related accounts?
+"MEMBERSHIP_RELATIONSHIP_TYPE." - ??
+"FISCAL_YEAR" - Year of transaction date
+s
+Primary Key = (ID_DEMO, TRANSACTION_DATE)
+
+
+academic_cleaned.csv - This file contains persons graduation year and the level of education
+"ID_DEMO" - Unique individual identifier
+"YEAR_GRAD" - Year when they graduated
+"CODE_UM_DEGREE_LEVEL" - Bachelors, Masters etc. 14 levels
+
+Primary Key = (ID_DEMO)
+
+
+emails_cleaned.csv - This table has the details of every email even sent, sent to who, what is the email about etc
+"CODE_PATH" - ?? Campaign? (1830 levels)
+"ID_DEMO" - Unique individual identifier
+"DATE_CONTACT" - Date email sent
+"CODE_OUTCOME" - ?? (5 levels)
+"YEAR_FISCAL" - Fiscal year of the email sent
+"Status_Clicked" - email clicked or not
+"broad_cat" - Category the email is related to (Sports, social, updates etc) (7 levels)
+
+Primary Key = (ID_DEMO, CODE_PATH)
+
+
+events_cleaned.csv - This table has info on the events conducted and the people who attended and what the event is about
+"ID_DEMO" - Unique individual identifier
+"NBR_GROUP" - ID of event??
+"NAME_GROUP" - Name of the event
+"DATE_EVENT" - Date of the event
+"TYPE" - Group meeting or Event
+"YEAR_FISCAL" - Year of event
+"broad_cat" - Category of event
+
+Primary Key = (ID_DEMO, NBR_GROUP)
+
+engagement_cleaned.csv - ?? (The columns are unclear)
+
+"ID_DEMO" - Unique individual identifier
+"YEAR_FISCAL" - Year of engagement
+"EVENT_ATTEND_ANNUAL"
+"UMAA_MEMBER_ANNUAL"
+"DONOR_ANNUAL"           
+"VOLUNTEER_ANNUAL"
+"STAY_INFORMED_ANNUAL"
+"LOYALTY_ANNUAL"
+"ENGAGEMENT_TOTAL_ANNUAL"
+"ENGAGEMENT_LEVEL_ANNUAL"
+"EVENT_ATTEND_LIFE"
+"UMAA_MEMBER_LIFE"
+"DONOR_LIFE"
+"VOLUNTEER_LIFE"
+"STAY_INFORMED_LIFE"     
+"LOYALTY_LIFE"
+"ENGAGEMENT_TOTAL_LIFE"
+"ENGAGEMENT_LEVEL_LIFE"  
+
+
+
+Issues:
+1. MEMBERSHIP_TYPE_CODE in Individual and MEMBERSHIP_LEVEL in membership are coded differently.
+2. Why not merge individual and academic?
+
+
+```{r}
+# plot_missing(individual)
+# plot_histogram(individual)
+# plot_density(individual)
+# plot_correlation(individual, type = 'continuous')
+# plot_bar(individual)
+#create_report(membership, output_file='membership_eda.html')
+#create_report(academic, output_file='academic_eda.html')
+#create_report(events, output_file='events_eda.html')
+#create_report(emails, output_file='emails_eda.html')
+
+# eda_report(individual)
+
+```

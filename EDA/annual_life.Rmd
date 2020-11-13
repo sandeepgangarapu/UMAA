@@ -1,0 +1,341 @@
+---
+title: "Differences between Annual, Lifetime, Current, Non-Members - UMAA"
+author: "Sandeep Gangarapu"
+output: html_document
+---
+  
+  
+```{r echo=FALSE, warning=FALSE}
+suppressPackageStartupMessages(
+  {
+    library(ggplot2)
+    library(dplyr)
+    library(tidyr)
+    library(DataExplorer)
+    library(dlookr)
+    library(corrplot)
+    library(data.table)
+
+  })
+
+# https://cran.r-project.org/web/packages/dlookr/vignettes/EDA.html
+# https://towardsdatascience.com/simple-fast-exploratory-data-analysis-in-r-with-dataexplorer-package-e055348d9619
+```
+
+
+We first look at all the files in the database
+
+```{r echo=FALSE, warning=FALSE}
+setwd("G:\\My Drive\\Research\\UMAA\\Data\\files\\Initial Data Files Cleaned")
+
+#membership <- read.csv("membership_cleaned.csv")
+individual <- read.csv("individual_info_cleaned.csv")
+#academic <- read.csv("academic_cleaned.csv")
+emails <- fread("emails_cleaned.csv")
+events <- read.csv("events_cleaned.csv")
+engagement <- read.csv("engagement_cleaned.csv")
+
+```
+
+
+
+
+Checking the distribution of engagement metrics for different types of members
+
+emails
+
+```{r}
+
+email_agg <- emails[, .(clicked = sum(Status_Clicked), tot = length(Status_Clicked), perc = sum(Status_Clicked)/length(Status_Clicked)) , ID_DEMO]
+
+
+ind_sub <- individual %>% select(ID_DEMO, MEMBERSHIP_STATUS_CODE, MEMBERSHIP_TYPE_CODE)
+email_data <- merge(email_agg, ind_sub, all.x = TRUE)
+
+
+
+annual_current <- email_data %>% filter(MEMBERSHIP_TYPE_CODE=='A' & MEMBERSHIP_STATUS_CODE=='C')
+life_current <- email_data %>% filter(MEMBERSHIP_TYPE_CODE=='L' & MEMBERSHIP_STATUS_CODE=='C')
+annual_past <- email_data %>% filter(MEMBERSHIP_TYPE_CODE=='A' & MEMBERSHIP_STATUS_CODE=='P')
+life_past <- email_data %>% filter(MEMBERSHIP_TYPE_CODE=='L' & MEMBERSHIP_STATUS_CODE=='P')
+current <-  email_data %>% filter(MEMBERSHIP_STATUS_CODE=='C')
+past <-  email_data %>% filter(MEMBERSHIP_STATUS_CODE=='P')
+nonmembers <-  email_data %>% filter(is.na(MEMBERSHIP_STATUS_CODE))
+
+t.test(annual$perc, life$perc)
+t.test(annual$perc, nonmembers$perc)
+t.test(life$perc, nonmembers$perc)
+
+
+ggplot() + 
+  geom_density(data=annual_current, aes(x=perc, color= 'annual_current')) + 
+  geom_density(data=life_current, aes(x=perc, color= 'life_current')) + 
+  geom_density(data=annual_past, aes(x=perc, color= 'annual_past')) + 
+  geom_density(data=life_past, aes(x=perc, color= 'life_past')) + 
+  geom_density(data=nonmembers, aes(x=perc, color= 'nonmembers'))+
+  labs(x = "Perc emails opened", y = "Density", color = "Legend")  + ggsave("email.png")
+
+
+
+ggplot() + 
+  geom_freqpoly(data=annual_current, aes(x=perc, color= 'annual_current')) + 
+  geom_freqpoly(data=life_current, aes(x=perc, color= 'life_current')) + 
+  geom_freqpoly(data=annual_past, aes(x=perc, color= 'annual_past')) + 
+  geom_freqpoly(data=life_past, aes(x=perc, color= 'life_past')) + 
+  geom_freqpoly(data=nonmembers, aes(x=perc, color= 'nonmembers'))+
+  labs(x = "Perc emails opened", color = "Legend")  + ggsave("email_hist.png")
+
+
+  
+  
+  
+mixed_df <- data.frame(annual= annual$perc, life = life$perc, nonmember = nonmembers$perc)
+
+
+t.test(current$perc, past$perc)
+t.test(current$perc, nonmembers$perc)
+t.test(past$perc, nonmembers$perc)
+
+
+
+ggplot() + geom_density(data=annual, aes(x=perc, color= 'annual')) + geom_density(data=life, aes(x=perc, color= 'life')) + geom_density(data=nonmembers, aes(x=perc, color= 'nonmembers')) + geom_density(data=current, aes(x=perc, color= 'current')) + geom_density(data=past, aes(x=perc, color= 'past')) + labs(x = "Perc emails opened", y = "Density" ) + ggsave("email.png")
+
+# tenure analysis
+# for current lifetime members the exp date is NA, so I am creating a fake expiry date as today 
+
+ind_sub <- individual %>% select(ID_DEMO, MEMBERSHIP_STATUS_CODE, MEMBERSHIP_TYPE_CODE, EXP_DATE_LAST_MEMBERSHIP, FIRST_EVER_START_DATE) %>%
+  mutate(FIRST_EVER_START_DATE = as.Date(FIRST_EVER_START_DATE),
+         EXP_DATE_LAST_MEMBERSHIP = as.Date(EXP_DATE_LAST_MEMBERSHIP)) %>%
+  mutate(EXP_DATE_LAST_MEMBERSHIP = ifelse(MEMBERSHIP_TYPE_CODE=='L' & MEMBERSHIP_STATUS_CODE=='C', as.Date(Sys.Date()), EXP_DATE_LAST_MEMBERSHIP))
+
+email_data <- merge(email_agg, ind_sub, all.x = TRUE)
+
+
+
+# first email was sent on 2014-09-12. calculating tenure from that date
+
+# 1. If last date is greated than today, change it to today
+
+email_data_1 <- email_data %>% filter(MEMBERSHIP_STATUS_CODE=='C') %>% 
+  mutate(EXP_DATE_LAST_MEMBERSHIP = ifelse(EXP_DATE_LAST_MEMBERSHIP > Sys.Date(), Sys.Date(), EXP_DATE_LAST_MEMBERSHIP)) %>% 
+   mutate(FIRST_EVER_START_DATE = ifelse(FIRST_EVER_START_DATE < as.Date("2014-09-12"), as.Date("2014-09-12"), FIRST_EVER_START_DATE)) %>% mutate(tenure = EXP_DATE_LAST_MEMBERSHIP - FIRST_EVER_START_DATE) %>% filter(tenure>0)
+
+  
+  email_data_annual <- email_data_1 %>% filter(MEMBERSHIP_TYPE_CODE=='A')
+    email_data_life <- email_data_1 %>% filter(MEMBERSHIP_TYPE_CODE=='L')
+
+  
+cor(email_data_annual$perc, email_data_annual$tenure)
+cor(email_data_life$perc, email_data_life$tenure)
+
+
+```
+
+
+
+
+events
+
+```{r}
+
+
+ind_sub <- individual %>% select(ID_DEMO, MEMBERSHIP_STATUS_CODE, MEMBERSHIP_TYPE_CODE, EXP_DATE_LAST_MEMBERSHIP, FIRST_EVER_START_DATE) %>%
+  mutate(FIRST_EVER_START_DATE = as.Date(FIRST_EVER_START_DATE),
+         EXP_DATE_LAST_MEMBERSHIP = as.Date(EXP_DATE_LAST_MEMBERSHIP)) %>%
+  mutate(EXP_DATE_LAST_MEMBERSHIP = ifelse(MEMBERSHIP_TYPE_CODE=='L' & MEMBERSHIP_STATUS_CODE=='C', as.Date(Sys.Date()), EXP_DATE_LAST_MEMBERSHIP)) %>% 
+  mutate(EXP_DATE_LAST_MEMBERSHIP = ifelse(EXP_DATE_LAST_MEMBERSHIP > Sys.Date(), Sys.Date(), EXP_DATE_LAST_MEMBERSHIP)) %>% 
+   mutate(FIRST_EVER_START_DATE = ifelse(FIRST_EVER_START_DATE < as.Date("2012-01-01"), as.Date("2012-01-01"), FIRST_EVER_START_DATE)) %>% mutate(tenure = (EXP_DATE_LAST_MEMBERSHIP - FIRST_EVER_START_DATE)/365) %>% filter(tenure>0) 
+
+
+
+event_agg <- events %>% group_by(ID_DEMO) %>% summarise(tot_events = n())
+event_data <- merge(event_agg, ind_sub, all.x = TRUE) %>% mutate(norm_events = tot_events/tenure)
+annual_current <- event_data %>% filter(MEMBERSHIP_TYPE_CODE=='A' & MEMBERSHIP_STATUS_CODE=='C')
+life_current <- event_data %>% filter(MEMBERSHIP_TYPE_CODE=='L' & MEMBERSHIP_STATUS_CODE=='C')
+current <-  event_data %>% filter(MEMBERSHIP_STATUS_CODE=='C')
+annual_past <-  event_data %>% filter(MEMBERSHIP_TYPE_CODE=='A' & MEMBERSHIP_STATUS_CODE=='P')
+life_past <-  event_data %>% filter(MEMBERSHIP_TYPE_CODE=='L' & MEMBERSHIP_STATUS_CODE=='P')
+nonmembers <-  event_data %>% filter(is.na(MEMBERSHIP_STATUS_CODE))
+
+t.test(annual$norm_events, life$norm_events)
+#t.test(annual$norm_events, nonmembers$norm_events)
+#t.test(life$norm_events, nonmembers$norm_events)
+t.test(current$norm_events, past$norm_events)
+#t.test(current$norm_events, nonmembers$norm_events)
+#t.test(past$norm_events, nonmembers$norm_events)
+
+
+ggplot() + 
+  geom_density(data=annual_current, aes(x=norm_events, color= 'annual_current')) + 
+  geom_density(data=life_current, aes(x=norm_events, color= 'life_current')) + 
+  geom_density(data=annual_past, aes(x=norm_events, color= 'annual_past')) + 
+ # geom_density(data=life_past, aes(x=norm_events, color= 'life_past')) + 
+  labs(x = "Events Normalized per Tenure", y = "Density" ) + xlim(0, 4) + ggsave("events.png")
+
+
+ggplot() + 
+  geom_freqpoly(data=annual_current, aes(x=norm_events, color= 'annual_current')) + 
+  geom_freqpoly(data=life_current, aes(x=norm_events, color= 'life_current')) + 
+  geom_freqpoly(data=annual_past, aes(x=norm_events, color= 'annual_past')) + 
+ # geom_density(data=life_past, aes(x=norm_events, color= 'life_past')) + 
+  labs(x = "Events Normalized per Tenure") + xlim(0, 4) + ggsave("events_hist.png")
+
+
+
+```
+
+
+All hypothesis here are in expected direction in terms of event attendence: 
+Life > annual > non members
+Curretn > Past > non members
+
+# Donor data analysis
+
+```{r}
+
+# aggregate annual donor data for the years the data is available.
+
+donor_agg <- engagement %>% select(ID_DEMO, YEAR_FISCAL, DONOR_ANNUAL) %>% filter(YEAR_FISCAL != 1919) %>% group_by(ID_DEMO) %>% summarise(tot_don = sum(DONOR_ANNUAL))
+
+
+ind_sub <- individual %>% select(ID_DEMO, MEMBERSHIP_STATUS_CODE, MEMBERSHIP_TYPE_CODE, EXP_DATE_LAST_MEMBERSHIP, FIRST_EVER_START_DATE) %>%
+  mutate(FIRST_EVER_START_DATE = as.Date(FIRST_EVER_START_DATE),
+         EXP_DATE_LAST_MEMBERSHIP = as.Date(EXP_DATE_LAST_MEMBERSHIP)) %>%
+  mutate(EXP_DATE_LAST_MEMBERSHIP = ifelse(MEMBERSHIP_TYPE_CODE=='L' & MEMBERSHIP_STATUS_CODE=='C', as.Date(Sys.Date()), EXP_DATE_LAST_MEMBERSHIP)) %>% 
+  mutate(EXP_DATE_LAST_MEMBERSHIP = ifelse(EXP_DATE_LAST_MEMBERSHIP > Sys.Date(), Sys.Date(), EXP_DATE_LAST_MEMBERSHIP)) %>% 
+   mutate(FIRST_EVER_START_DATE = ifelse(FIRST_EVER_START_DATE < as.Date("2012-01-01"), as.Date("2012-01-01"), FIRST_EVER_START_DATE)) %>% mutate(tenure = (EXP_DATE_LAST_MEMBERSHIP - FIRST_EVER_START_DATE)/365) %>% filter(tenure>0) 
+
+
+
+donor_data <- merge(donor_agg, ind_sub, all.x = TRUE)
+annual_current <- donor_data %>% filter(MEMBERSHIP_TYPE_CODE=='A' & MEMBERSHIP_STATUS_CODE=='C')
+life_current <- donor_data %>% filter(MEMBERSHIP_TYPE_CODE=='L' & MEMBERSHIP_STATUS_CODE=='C')
+current <-  donor_data %>% filter(MEMBERSHIP_STATUS_CODE=='C')
+annual_past <-  donor_data %>% filter(MEMBERSHIP_TYPE_CODE=='A' & MEMBERSHIP_STATUS_CODE=='P')
+life_past <-  donor_data %>% filter(MEMBERSHIP_TYPE_CODE=='L' & MEMBERSHIP_STATUS_CODE=='P')
+nonmembers <-  donor_data %>% filter(is.na(MEMBERSHIP_STATUS_CODE))
+
+t.test(annual$tot_don, life$tot_don)
+t.test(annual$tot_don, nonmembers$tot_don)
+t.test(life$tot_don, nonmembers$tot_don)
+t.test(current$tot_don, past$tot_don)
+t.test(current$tot_don, nonmembers$tot_don)
+t.test(past$tot_don, nonmembers$tot_don)
+
+
+ggplot() + 
+  geom_density(data=annual_current, aes(x=tot_don, color= 'annual_current')) + 
+  geom_density(data=life_current, aes(x=tot_don, color= 'life_current')) + 
+  geom_density(data=annual_past, aes(x=tot_don, color= 'annual_past')) + 
+ # geom_density(data=life_past, aes(x=tot_don, color= 'life_past')) + 
+  geom_density(data=nonmembers, aes(x=tot_don, color= 'nonmembers'))+
+  labs(x = "Total Donor Score", y = "Density", color = "Legend")  + ggsave("donor.png")
+
+options("scipen"=100, "digits"=4)
+
+  
+ggplot() + 
+  geom_freqpoly(data=annual_current, aes(x=tot_don, color= 'annual_current')) + 
+  geom_freqpoly(data=life_current, aes(x=tot_don, color= 'life_current')) + 
+  geom_freqpoly(data=annual_past, aes(x=tot_don, color= 'annual_past')) + 
+ # geom_density(data=life_past, aes(x=tot_don, color= 'life_past')) + 
+  geom_freqpoly(data=nonmembers, aes(x=tot_don, color= 'nonmembers'))+
+  labs(x = "Total Donor Score", color = "Legend")  + ggsave("donor_hist.png")
+
+
+  
+
+ggplot() + geom_density(data=annual, aes(x=tot_don, color= 'annual')) + geom_density(data=life, aes(x=tot_don, color= 'life')) + geom_density(data=nonmembers, aes(x=tot_don, color= 'nonmembers')) + geom_density(data=current, aes(x=tot_don, color= 'current')) + geom_density(data=past, aes(x=tot_don, color= 'past')) + labs(x = "Total Donor Score", y = "Density" ) + ggsave("donor.png")
+
+```
+
+Prepare data for kmeans clustering
+
+
+```{r}
+
+
+donor_non <-  donor_data %>% filter(is.na(MEMBERSHIP_STATUS_CODE)) %>% select(ID_DEMO, tot_don)  %>% drop_na()
+
+email_non <-  email_data %>% filter(is.na(MEMBERSHIP_STATUS_CODE)) %>% select(ID_DEMO, perc) %>% drop_na()
+
+clust_core <- merge(donor_non, email_non)
+
+
+clust <- clust_core
+clust[,2:3] <- scale(clust[,2:3])
+
+
+
+
+mn_don <- mean(clust_core$tot_don)
+sd_don <- sd(clust_core$tot_don)
+mn_email <- mean(clust_core$perc)
+sd_email <- sd(clust_core$perc)
+
+
+rownames(clust) <- clust$ID_DEMO
+
+
+ggplot(clust) + geom_point(aes(x=tot_don, y=perc)) + ggsave("kmeans_preplot.png")
+clust <- clust[,2:3]
+
+
+mean(clust$perc)
+sd(clust$perc)
+
+
+set.seed(123)
+km.res <- kmeans(clust, 4, nstart = 25)
+
+print(km.res)
+
+aggregate(clust, by=list(cluster=km.res$cluster), mean)
+
+km.res$size
+
+km.res$centers
+library(factoextra)
+
+fviz_cluster(km.res, data=clust, geom="point") + ggsave('kmeans.png')
+
+wss <- sapply(1:100, 
+              function(k){kmeans(clust, k, nstart=50 )$tot.withinss})
+wss
+
+elbow_df <- data.frame('n'=1:10, 'wss'=wss)
+
+ggplot(elbow_df) + geom_line(aes(x=n, y=wss))  + ggsave("kmeans.png")
+
+
+
+annual_current_email <- email_data %>% filter(MEMBERSHIP_TYPE_CODE=='A' & MEMBERSHIP_STATUS_CODE=='C') %>% select(ID_DEMO, perc)  %>% drop_na()
+life_current_email <- email_data %>% filter(MEMBERSHIP_TYPE_CODE=='L' & MEMBERSHIP_STATUS_CODE=='C') %>% select(ID_DEMO, perc)  %>% drop_na()
+
+
+
+annual_current_don <- donor_data %>% filter(MEMBERSHIP_TYPE_CODE=='A' & MEMBERSHIP_STATUS_CODE=='C') %>% select(ID_DEMO, tot_don)  %>% drop_na()
+life_current_don <- donor_data %>% filter(MEMBERSHIP_TYPE_CODE=='L' & MEMBERSHIP_STATUS_CODE=='C') %>% select(ID_DEMO, tot_don)  %>% drop_na()
+
+
+clust_annual <- merge(annual_current_don, annual_current_email)
+rownames(clust_annual) <- clust_annual$ID_DEMO
+clust_annual <- clust_annual[,2:3]
+
+clust_life <- merge(life_current_don, life_current_email)
+rownames(clust_life) <- clust_life$ID_DEMO
+
+clust_life <- clust_life[,2:3]
+
+fn <- function(x, mn, std) {(x-mn)/std}
+
+an_email <- mean(sapply(clust_annual$perc, fn, mn=mn_email, std=sd_email) )
+life_email <- mean(sapply(clust_life$perc, fn, mn=mn_email, std=sd_email) )
+an_don <- mean(sapply(clust_annual$tot_don, fn, mn=mn_don, std=sd_don))
+life_don <- mean(sapply(clust_life$tot_don, fn, mn=mn_don, std=sd_don) )
+
+
+
+
+```
+
