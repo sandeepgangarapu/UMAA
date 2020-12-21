@@ -14,112 +14,187 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.decomposition import PCA
 from imblearn.over_sampling import SMOTE
+# from lightgbm import LGBMClassifier
 from sklearn.model_selection import GridSearchCV, cross_validate
 from imblearn.pipeline import Pipeline
 from sklearn.impute import SimpleImputer
 from sklearn.preprocessing import StandardScaler, OneHotEncoder
 from sklearn.compose import ColumnTransformer
 from sklearn.linear_model import LogisticRegression
-from sklearn.metrics import roc_auc_score, confusion_matrix, classification_report, accuracy_score
+from sklearn.metrics import roc_auc_score, confusion_matrix, classification_report, accuracy_score, roc_curve
 from sklearn.linear_model import LogisticRegression
 from sklearn.svm import SVC
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
 import seaborn as sns
+# !pip install pyplot
+# from xgboost import XGBClassifier
+from matplotlib import pyplot
 
 
+def load_data_from_drive():
+    # from google.colab import drive
+    # drive.mount('/content/drive/')
+    # """Load data"""
+    # data = pd.read_csv('/content/drive/My Drive/Colab Notebooks/UMAA/data_for_model.csv')
+    # valid_data = pd.read_csv('/content/drive/My Drive/Colab Notebooks/UMAA/all_data_for_final.csv')
+    # return data, valid_data
+    pass
 
-"""Load data"""
-
-data = pd.read_csv('ata_for_model.csv')
-valid_data = pd.read_csv('all_data_for_final.csv')
-
-
-data = data.set_index('ID_DEMO')
-valid_data = valid_data.set_index('ID_DEMO')
-print(data.columns)
-
-"""Seperate features and Target. Split the data into test and train sets"""
-
-y = data['target'].ravel()
-X = data.drop(['target'], axis=1)
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.10, random_state=42, stratify=y)
-
-"""Do preprocessing.
-
-1. Impute missing values
-2. Covers multi category variables into dummies
-3. Scale all numeric variables 
-4. PCA to reduce dimensions
-5. SMOTE to remove imbalence
-
-Use Logistic Regression as a baseline classifier
-"""
-
-numeric_features = ['AGE', 'UMN_event',
-       'UMN_member', 'UMN_donor', 'UMN_volun', 'UMN_inform', 'UMN_loyalty',
-       'UMN_avg_Annual_score_5_years', 'annual_member', 'life_member',
-       'non_member', 'Learning_emails', 'Legislature_emails', 'Social_emails',
-       'Sports_emails', 'general_ctr_emails', 'Learning_events',
-       'Legislature_events', 'Networking_events', 'Other_events',
-       'Social_events', 'Sports_events', 'total_type_person_events']
-numeric_transformer = Pipeline(steps=[
-    ('scaler', StandardScaler())])
-
-categorical_features = ['MARITAL_STATUS']
-categorical_transformer = Pipeline(steps=[
-                                          ('imputer', SimpleImputer(strategy='constant', fill_value='missing')),
-                                          ('onehot', OneHotEncoder(drop='first'))])
-
-preprocessor = ColumnTransformer(
-    transformers=[
-        ('num', numeric_transformer, numeric_features),
-       ('cat', categorical_transformer, categorical_features)
-       ], n_jobs=-1)
-
-pipe = Pipeline(steps=[('preprocessor', preprocessor),
-                      ('smt', SMOTE(random_state=42, sampling_strategy=1)),
-                      ('pca', PCA(n_components='mle')),
-                      ('clf', GradientBoostingClassifier())])
-
-"""Grid Search to search the hyperparameter space for Grandient Boosting classifier"""
-
-param_grid = {
-    'clf__kernel' : ['linear', 'rbf'],
-    'clf__C' : np.linspace(0.1,1.2,12)
-}
-
-cv_grid = GridSearchCV(pipe, param_grid, cv=3, n_jobs=-1)
-
-cv_grid.fit(X_train, y_train)
-print("best_params",cv_grid.best_params_)
-print("best_score", cv_grid.best_score_)
-
-y_pred_prob = cv_grid.predict_proba(X_test)
-y_pred = cv_grid.predict(X_test)
-
-print("ROC Score", roc_auc_score(y_test, y_pred_prob[:,1]))
-
-print(classification_report(y_test, y_pred))
-
-# Get all measurement
-columns_name = ['Accuracy', 'Precision', 'Recall', 'F1-Score']
-accuracy = accuracy_score(y_test, y_pred)
-print('Accuracy of Model is {0}'.format(round(accuracy,4)))
-print(np.unique(y_test, return_counts=True))
-print(confusion_matrix(y_test, y_pred))
+def load_data_from_file():
+    data = pd.read_csv('data_for_model.csv')
+    valid_data = pd.read_csv('all_data_for_final.csv')
+    return data, valid_data
 
 
-sns.distplot(y_pred_prob[:,1], hist=True, kde=True, 
-             bins=int(180/5), color = 'darkblue', 
-             hist_kws={'edgecolor':'black'},
-             kde_kws={'linewidth': 4})
+def preprocessing():
+    """Do preprocessing.
+    1. Impute missing values
+    2. Covers multi category variables into dummies
+    3. Scale all numeric variables
+    4. PCA to reduce dimensions
+    5. SMOTE to remove imbalence
+
+    Use Logistic Regression as a baseline classifier
+    """
+
+    numeric_features = ['AGE', 'UMN_event',
+           'UMN_member', 'UMN_donor', 'UMN_volun', 'UMN_inform', 'UMN_loyalty',
+           'UMN_avg_Annual_score_5_years', 'annual_member', 'life_member',
+           'non_member', 'Learning_emails', 'Legislature_emails', 'Social_emails',
+           'Sports_emails', 'general_ctr_emails', 'Learning_events',
+           'Legislature_events', 'Networking_events', 'Other_events',
+           'Social_events', 'Sports_events', 'total_type_person_events']
+    numeric_transformer = Pipeline(steps=[
+        ('scaler', StandardScaler())])
+
+    categorical_features = ['MARITAL_STATUS']
+    categorical_transformer = Pipeline(steps=[
+                                              ('imputer', SimpleImputer(strategy='constant', fill_value='missing')),
+                                              ('onehot', OneHotEncoder(drop='first'))])
+
+    preprocessor = ColumnTransformer(
+        transformers=[
+            ('num', numeric_transformer, numeric_features),
+           ('cat', categorical_transformer, categorical_features)
+           ], n_jobs=-1)
+
+    # Append classifier to preprocessing pipeline.
+    # Now we have a full prediction pipeline.
+    pipe = Pipeline(steps=[('preprocessor', preprocessor),
+                          ('smt', SMOTE(random_state=42, sampling_strategy=1)),
+                          ('pca', PCA(n_components='mle'))])
+
+    return pipe
 
 
-a= cv_grid.predict_proba(valid_data)[:,1]
+def pipeline_output(pipe, X_train, y_train, X_test):
+    pipe.fit(X_train, y_train)
+    y_pred_prob = pipe.predict_proba(X_test)
+    y_pred = pipe.predict(X_test)
+    return y_pred, y_pred_prob
 
-sns.distplot(a, hist=True, kde=True, 
-             bins=int(180/5), color = 'darkblue', 
-             hist_kws={'edgecolor':'black'},
-             kde_kws={'linewidth': 4})
+def get_metrics(y_pred, y_pred_prob, y_test):
+    print("ROC_AUC_Score", roc_auc_score(y_test, y_pred_prob[:, 1]))
+    print('--------------')
+    print("Classification Report on Test")
+    print(classification_report(y_test, y_pred))
+    print('--------------')
+    lr_fpr, lr_tpr, _ = roc_curve(y_test, y_pred_prob[:, 1])
+    return lr_fpr, lr_tpr
+
+def pipeline_search_func(clfs, pipe, X_train, y_train, X_test, y_test):
+    for classifier in clfs:
+        pipe.set_params(clf=classifier)
+        if cross_validate_pipeline_search:
+            scores = cross_validate(pipe, X_train, y_train, scoring='roc_auc', cv=5, n_jobs=-1)
+            print('---------------------------------')
+            print(str(classifier.__class__.__name__))
+            print('-----------------------------------')
+            for key, values in scores.items():
+                    print(key,' mean ', values.mean())
+                    print(key,' std ', values.std())
+        else:
+            y_pred, y_pred_prob = pipeline_output(pipe, X_train, y_train, X_test)
+            classifier_name = pipe.named_steps['clf'].__class__.__name__
+            print('---------------------------------')
+            print(classifier_name)
+            print('-----------------------------------')
+            lr_fpr, lr_tpr = get_metrics(y_pred, y_pred_prob, y_test)
+            # params_plot[classifier.__class__.__name__] = (lr_fpr, lr_tpr)
+            # plot the roc curve for the model
+            pyplot.plot(lr_fpr, lr_tpr, label=str(classifier_name))
+            pyplot.xlabel('False Positive Rate')
+            pyplot.ylabel('True Positive Rate')
+            # show the legend
+            pyplot.legend()
+            # show the plot
+            pyplot.show()
+            pyplot.savefig("overlap_roc.png", dpi=500)
+
+
+if __name__ == '__main__':
+    drive_load = False
+    normal_load = True
+    pipeline_search = True
+    cross_validate_pipeline_search = True
+    main_clf_grid_search = False
+    main_clf_direct = False
+    main_clf = GradientBoostingClassifier()
+    clfs = []
+    clfs.append(KNeighborsClassifier(n_neighbors=3, n_jobs=-1))
+    clfs.append(DecisionTreeClassifier())
+    # clfs.append(RandomForestClassifier(n_jobs=-1))
+    # clfs.append(GradientBoostingClassifier(n_jobs=-1))
+    # clfs.append(SVC(n_jobs=-1))
+    # clfs.append(LogisticRegression(n_jobs=-1))
+
+
+    global data, valid_data
+
+    if drive_load:
+        data, valid_data = load_data_from_drive()
+    elif normal_load:
+        data, valid_data = load_data_from_file()
+
+    data.sample(frac=0.05, replace=False, random_state=1)
+    data = data.set_index('ID_DEMO')
+    valid_data = valid_data.set_index('ID_DEMO')
+
+    """Seperate features and Target. Split the data into test and train sets"""
+
+    y = data['target'].ravel()
+    X = data.drop(['target'], axis=1)
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.10, random_state=42, stratify=y)
+
+    # Create a pipeline with preprocessing steps
+    pipe = preprocessing()
+
+    # keeping a default classifier
+    pipe.steps.append(['clf',LogisticRegression(n_jobs=-1)])
+
+    if pipeline_search:
+        pipeline_search_func(clfs, pipe, X_train, y_train, X_test, y_test)
+    if main_clf_grid_search:
+        pass
+    if main_clf_direct:
+        pipe.set_params(clf=main_clf)
+        """Performace evaluation of Gradient Boosting Classifier"""
+        y_pred, y_pred_prob = pipeline_output(pipe, X_train, y_train, X_test)
+        classifier_name = pipe.named_steps['clf'].__class__.__name__
+        print('---------------------------------')
+        print(classifier_name)
+        print('-----------------------------------')
+        get_metrics(y_pred, y_pred_prob, y_test)
+        sns.distplot(y_pred_prob[:,1], hist=True, kde=True,
+                     bins=int(180/5), color = 'darkblue',
+                     hist_kws={'edgecolor':'black'},
+                     kde_kws={'linewidth': 4})
+
+        a= pipe.predict_proba(valid_data)[:,1]
+
+        sns.distplot(a, hist=True, kde=True,
+                     bins=int(180/5), color = 'darkblue',
+                     hist_kws={'edgecolor':'black'},
+                     kde_kws={'linewidth': 4})

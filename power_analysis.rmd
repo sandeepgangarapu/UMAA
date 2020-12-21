@@ -1,0 +1,103 @@
+```{r}
+title: "Power Analysis - UMAA"
+output: html_document
+```
+
+## Prop Test
+
+We use prop test to compare if the conversion rates for two treatments groups are the same. The null hypothesis is that the conversion rates for both groups is the same. The alternative hypothesis is that the conversion rates are different.
+
+
+
+```{r}
+library(pwr)
+```
+
+
+```{r}
+# Defining some variables
+# conversion rate for Lifetime members
+c_l <- seq(0.01, 0.2, 0.02)
+
+# conversion rate for referrals
+c_r <- seq(0.01, 0.5, 0.05)
+
+# Baseline conversion of random group
+b_c <- seq(0.01, 0.05, 0.01)
+
+# Conversion rate of ML group
+m_c <- seq(0.01, 0.3, 0.05)
+```
+
+
+
+```{r}
+options(scipen=999)
+
+life_conv <- vector()
+ref_conv <- vector()
+ml_conv <- vector()
+n_vec <- vector()
+
+for (i in c_l) {
+  for (j in c_r) {
+    for (k in m_c) {
+      life_conv <- c(life_conv, i)
+      ref_conv <- c(ref_conv, j)
+      ml_conv <- c(ml_conv, k)
+      prop_1 = i * j
+      prop_2 = k
+      print(prop_2)
+      test <- pwr.2p.test(abs(prop_2-prop_1), sig.level = 0.05, power=0.8)
+      n <- test$n
+      n_vec <- c(n_vec, n)
+      df1 <- data.frame(life_conv, ref_conv, ml_conv, n_vec)
+
+    }
+    
+  }
+  
+}
+
+
+df1 <- data.frame(c_l_vec, c_r_vec, m_c_vec, n_vec)
+
+
+
+```
+
+
+
+
+```{r}
+options(scipen=999)
+
+life_conv <- vector()
+ref_conv <- vector()
+base_conv <- vector()
+n_vec <- vector()
+
+for (i in c_l) {
+  for (j in c_r) {
+    for (k in b_c) {
+      life_conv <- c(life_conv, i)
+      ref_conv <- c(ref_conv, j)
+      base_conv <- c(base_conv, k)
+      prop_1 = i * j
+      prop_2 = k
+      print(prop_2)
+      test <- pwr.2p.test(abs(prop_2-prop_1), sig.level = 0.05, power=0.8)
+      n <- test$n
+      n_vec <- c(n_vec, n)
+      df2 <- data.frame(life_conv, ref_conv, base_conv, n_vec)
+
+    }
+    
+  }
+  
+}
+
+df2 <- data.frame(c_l_vec, c_r_vec, m_c_vec, n_vec)
+
+```
+
