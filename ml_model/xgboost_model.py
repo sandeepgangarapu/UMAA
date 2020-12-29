@@ -65,20 +65,12 @@ pipe = Pipeline(steps=[('preprocessor', preprocessor),
                       ('pca', PCA(n_components='mle'))])
 
 
-param_grid = {
- 'clf__reg_alpha':[1e-5, 1e-2, 0.1, 1, 100]}
+pipe.steps.append(['clf', XGBClassifier(learning_rate=0.01, n_estimators=5000, max_depth=2,
+ min_child_weight=5, gamma=0.0, subsample=0.6, colsample_bytree=0.8, seed=27, reg_alpha=0.00002)])
 
 
-pipe.steps.append(['clf', XGBClassifier(learning_rate=0.1, n_estimators=140, max_depth=2,
- min_child_weight=5, gamma=0.0, subsample=0.6, colsample_bytree=0.8, seed=27)])
-
-
-grid = GridSearchCV(pipe, n_jobs=-1, param_grid=param_grid, scoring='roc_auc', cv=3)
-
-grid.fit(X_train, y_train)
-print(grid.best_params_, grid.best_score_)
-
-y_pred_prob = grid.predict_proba(X_test)
-y_pred = grid.predict(X_test)
+pipe.fit(X_train, y_train)
+y_pred_prob = pipe.predict_proba(X_test)
+y_pred = pipe.predict(X_test)
 print(roc_auc_score(y_test, y_pred_prob[:,1]))
 print(confusion_matrix(y_test, y_pred))
