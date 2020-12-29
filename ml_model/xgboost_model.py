@@ -66,8 +66,8 @@ pipe = Pipeline(steps=[('preprocessor', preprocessor),
 
 
 param_grid = {
- 'max_depth':range(3,10,2),
- 'min_child_weight':range(1,6,2)
+ 'classifier__max_depth':range(3,10,2),
+ 'classifier__min_child_weight':range(1,6,2)
 }
 
 
