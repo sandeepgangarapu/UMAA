@@ -10,8 +10,6 @@ Original file is located at
 import pandas as pd
 import numpy as np
 from sklearn.model_selection import train_test_split, StratifiedShuffleSplit
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.neighbors import KNeighborsClassifier
 from sklearn.decomposition import PCA
 from imblearn.over_sampling import SMOTE
 from sklearn.model_selection import GridSearchCV, cross_validate
@@ -19,17 +17,8 @@ from imblearn.pipeline import Pipeline
 from sklearn.impute import SimpleImputer, KNNImputer
 from sklearn.preprocessing import StandardScaler, OneHotEncoder
 from sklearn.compose import ColumnTransformer
-from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import roc_auc_score, confusion_matrix, classification_report, accuracy_score, roc_curve
-from sklearn.linear_model import LogisticRegression
-from sklearn.svm import SVC
-from sklearn.neighbors import KNeighborsClassifier
-from sklearn.tree import DecisionTreeClassifier
-from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
-import seaborn as sns
-# !pip install pyplot
 from xgboost import XGBClassifier
-from matplotlib import pyplot
 
 """Load data"""
 
