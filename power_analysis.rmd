@@ -101,3 +101,16 @@ df2 <- data.frame(c_l_vec, c_r_vec, m_c_vec, n_vec)
 
 ```
 
+
+
+```{r}
+pwr.2p2n.test(h = ES.h(0.004,0.008), n1=2300, sig.level = 0.05, power=0.8, alternative ='less')
+
+power.prop.test(p1 = 0.004, p2 = 0.008, sig.level = 0.05, power = .80, alternative ='two.sided')
+
+power.prop.test(p1 = 0.004, n = 1500, sig.level = 0.05, power = .80, alternative ='two.sided')
+
+```
+      
+      
+      
