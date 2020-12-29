@@ -66,7 +66,7 @@ pipe = Pipeline(steps=[('preprocessor', preprocessor),
 
 
 pipe.steps.append(['clf', XGBClassifier(learning_rate=0.01, n_estimators=5000, max_depth=2,
- min_child_weight=5, gamma=0.0, subsample=0.6, colsample_bytree=0.8, seed=27, reg_alpha=0.00002)])
+ min_child_weight=5, gamma=0.0, subsample=0.6, colsample_bytree=0.8, seed=27, reg_alpha=0.00002, nthread=-1)])
 
 
 pipe.fit(X_train, y_train)
@@ -79,4 +79,5 @@ print(confusion_matrix(y_test, y_pred))
 
 filename = 'finalized_model.sav'
 pickle.dump(pipe, open(filename, 'wb'))
+
 
