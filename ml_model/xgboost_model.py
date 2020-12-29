@@ -19,7 +19,7 @@ from sklearn.preprocessing import StandardScaler, OneHotEncoder
 from sklearn.compose import ColumnTransformer
 from sklearn.metrics import roc_auc_score, confusion_matrix, classification_report, accuracy_score, roc_curve
 from xgboost import XGBClassifier
-
+import pickle
 """Load data"""
 
 
@@ -70,7 +70,13 @@ pipe.steps.append(['clf', XGBClassifier(learning_rate=0.01, n_estimators=5000, m
 
 
 pipe.fit(X_train, y_train)
+
+
 y_pred_prob = pipe.predict_proba(X_test)
 y_pred = pipe.predict(X_test)
 print(roc_auc_score(y_test, y_pred_prob[:,1]))
 print(confusion_matrix(y_test, y_pred))
+
+filename = 'finalized_model.sav'
+pickle.dump(pipe, open(filename, 'wb'))
+
