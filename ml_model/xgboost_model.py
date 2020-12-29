@@ -66,12 +66,11 @@ pipe = Pipeline(steps=[('preprocessor', preprocessor),
 
 
 param_grid = {
- 'clf__subsample':[i/10.0 for i in range(6,10)],
- 'clf__colsample_bytree':[i/10.0 for i in range(6,10)]}
+ 'clf__reg_alpha':[1e-5, 1e-2, 0.1, 1, 100]}
 
 
 pipe.steps.append(['clf', XGBClassifier(learning_rate=0.1, n_estimators=140, max_depth=2,
- min_child_weight=5, gamma=0.8817, subsample=0.8, colsample_bytree=0.8, seed=27)])
+ min_child_weight=5, gamma=0.0, subsample=0.6, colsample_bytree=0.8, seed=27)])
 
 
 grid = GridSearchCV(pipe, n_jobs=-1, param_grid=param_grid, scoring='roc_auc', cv=3)
