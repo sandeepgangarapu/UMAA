@@ -37,11 +37,10 @@ X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.10, random
 
 numeric_features = ['AGE', 'UMN_event',
        'UMN_member', 'UMN_donor', 'UMN_volun', 'UMN_inform', 'UMN_loyalty',
-       'UMN_avg_Annual_score_5_years', 'annual_member', 'life_member',
-       'non_member', 'Learning_emails', 'Legislature_emails', 'Social_emails',
+       'UMN_avg_Annual_score_5_years', 'Learning_emails', 'Legislature_emails', 'Social_emails',
        'Sports_emails', 'general_ctr_emails', 'Learning_events',
        'Legislature_events', 'Networking_events', 'Other_events',
-       'Social_events', 'Sports_events', 'total_type_person_events']
+       'Social_events', 'Sports_events', 'total_type_person_events', 'member_before', 'years_before']
 numeric_transformer = Pipeline(steps=[
     ('scaler', StandardScaler())])
 

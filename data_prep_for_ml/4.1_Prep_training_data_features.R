@@ -1,5 +1,5 @@
 #set working directory
-setwd('G:\\My Drive\\Research\\UMAA\\Data\\fresh_data')
+setwd('G:\\My Drive\\Research\\UMAA\\Data\\main_data')
 
 ## Libraries used
 
@@ -168,10 +168,11 @@ main_df <- rbind(main_df, annual_life_per_yr)
 
 
 membership_LastYear <- main_df[FISCAL_YEAR == current_fy-1][, membership_LastYear := member_status][,.(ID_DEMO, membership_LastYear)]
+# We remove those who go complimnentary membership in this year
+
+
 membership_TwoYearsAgo <- main_df[FISCAL_YEAR == current_fy-2][, membership_TwoYearsAgo := member_status][,.(ID_DEMO, membership_TwoYearsAgo)]
 
-
-# adding compensation flag to find out who became member because of compensation
 
 #we now remove last yr data to get the training data.
 

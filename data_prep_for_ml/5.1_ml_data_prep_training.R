@@ -1,11 +1,15 @@
 #set working directory
-setwd('G:\\My Drive\\Research\\UMAA\\Data\\fresh_data')
+setwd('G:\\My Drive\\Research\\UMAA\\Data\\main_data')
 
 ## Libraries used
 
 library(lubridate)
 library(data.table)
 indy_info_main <- fread('individual_info_cleaned.csv')
+membership <- fread('membership_cleaned.csv')
+current_fy = 2021
+membership <- membership[FISCAL_YEAR < current_fy-2][, rnk:=frank(-FISCAL_YEAR), .(ID_DEMO)][rnk==1]
+membership <- membership[,.(ID_DEMO, FISCAL_YEAR, MEMBERSHIP_LEVEL)]
 training <- fread('ML files/new_member_training.csv')
 
 # Data prep for demographic data
@@ -30,13 +34,16 @@ individual <- individual[,.(ID_DEMO, MARITAL_STATUS, GENDER, AGE,
                              
 
 final_df <- merge.data.table(individual, training, by="ID_DEMO")
+final_df <- final_df[membership_TwoYearsAgo=="non_member"]
 
-final_df[, target := ifelse(membership_TwoYearsAgo=="non_member" & membership_LastYear!="non_member", 1,
-                           ifelse(membership_TwoYearsAgo!="non_member" & membership_LastYear=="non_member", 2, 0))]
-# we filter those with value two as we are no interested in who became non member from member
+final_df[, target := ifelse(membership_LastYear!="non_member", 1,0)]
 
-final_df <- final_df[target!=2, ][, `:=`(membership_LastYear=NULL, membership_TwoYearsAgo=NULL)]
+final_df <- final_df[, `:=`(membership_LastYear=NULL, membership_TwoYearsAgo=NULL)]
 
+# Now we see if they have even been a member before
+final_df <- merge.data.table(final_df, membership, by="ID_DEMO", all.x=TRUE)
+final_df <- final_df[,member_before:= ifelse(is.na(MEMBERSHIP_LEVEL), 0, 1)][, years_before:=ifelse(is.na(FISCAL_YEAR), 100, current_fy-2-FISCAL_YEAR)]
+final_df <- final_df[, `:=`(FISCAL_YEAR=NULL, MEMBERSHIP_LEVEL=NULL, annual_member=NULL, life_member=NULL, non_member=NULL)]
 fwrite(final_df, "ML files/data_for_model.csv", row.names = FALSE)
 
 
