@@ -41,6 +41,7 @@ numeric_features = ['AGE', 'UMN_event',
        'Sports_emails', 'general_ctr_emails', 'Learning_events',
        'Legislature_events', 'Networking_events', 'Other_events',
        'Social_events', 'Sports_events', 'total_type_person_events', 'member_before', 'years_before']
+
 numeric_transformer = Pipeline(steps=[
     ('scaler', StandardScaler())])
 
@@ -64,15 +65,22 @@ pipe = Pipeline(steps=[('preprocessor', preprocessor),
                       ('pca', PCA(n_components='mle'))])
 
 
-pipe.steps.append(['clf', XGBClassifier(learning_rate=0.01, n_estimators=5000, max_depth=2,
- min_child_weight=5, gamma=0.0, subsample=0.6, colsample_bytree=0.8, seed=27, reg_alpha=0.00002, nthread=-1)])
+pipe.steps.append(['clf', XGBClassifier(learning_rate=0.1, n_estimators=300, max_depth=5,
+ min_child_weight=1, gamma=0, subsample=0.8, colsample_bytree=0.8, seed=27, reg_alpha=0.00002, nthread=-1)])
 
 
-pipe.fit(X_train, y_train)
+param_grid = {
+ 'clf__max_depth':range(3,10,2),
+ 'clf__min_child_weight':range(1,6,2)
+}
 
-
-y_pred_prob = pipe.predict_proba(X_test)
-y_pred = pipe.predict(X_test)
+grid = GridSearchCV(pipe, param_grid, n_jobs=-1)
+grid.fit(X_train, y_train)
+print(grid.best_params_)
+print(grid.best_score_)
+print("----------------------------------")
+y_pred_prob = grid.predict_proba(X_test)
+y_pred = grid.predict(X_test)
 print(roc_auc_score(y_test, y_pred_prob[:,1]))
 print(confusion_matrix(y_test, y_pred))
 

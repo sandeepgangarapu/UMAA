@@ -21,10 +21,7 @@ membership_main <- fread('membership_cleaned.csv')
 na_members <- copy(indy_info_main)[is.na(MEMBERSHIP_STATUS_CODE)]
 past_members <- copy(indy_info_main)[MEMBERSHIP_STATUS_CODE=='P']
 
-members <- rbind(na_members, past_members)
-members_1 <- copy(members)[,ID_SPOUSE:=NULL]
-members_2 <- copy(members)[,ID_DEMO:=NULL][,ID_DEMO:=ID_SPOUSE][,ID_SPOUSE:=NULL][!is.na(ID_DEMO)]
-non_members <- rbind(members_1, members_2)
+non_members <- rbind(na_members, past_members)[,.(ID_DEMO)]
 
 # setwd("D:/Group Folder/Data")
 

@@ -44,6 +44,8 @@ final_df <- final_df[, `:=`(membership_LastYear=NULL, membership_TwoYearsAgo=NUL
 final_df <- merge.data.table(final_df, membership, by="ID_DEMO", all.x=TRUE)
 final_df <- final_df[,member_before:= ifelse(is.na(MEMBERSHIP_LEVEL), 0, 1)][, years_before:=ifelse(is.na(FISCAL_YEAR), 100, current_fy-2-FISCAL_YEAR)]
 final_df <- final_df[, `:=`(FISCAL_YEAR=NULL, MEMBERSHIP_LEVEL=NULL, annual_member=NULL, life_member=NULL, non_member=NULL)]
+
+
 fwrite(final_df, "ML files/data_for_model.csv", row.names = FALSE)
 
 

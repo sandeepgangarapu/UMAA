@@ -33,7 +33,7 @@ individual <- individual[,.(ID_DEMO, MARITAL_STATUS, GENDER, AGE,
                             WEB_TOPIC_OPT_INS)]                             
                              
 
-final_df <- merge.data.table(individual, all_data, by="ID_DEMO")
+final_df <- merge.data.table(all_data, individual, by="ID_DEMO", all=FALSE)
 
 # Now we see if they have even been a member before
 final_df <- merge.data.table(final_df, membership, by="ID_DEMO", all.x=TRUE)

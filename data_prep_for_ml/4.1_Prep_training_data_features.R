@@ -30,23 +30,13 @@ membership_main <- fread('membership_cleaned.csv')
 
 
 # from indy file
-current_life_members <- indy_info_main[MEMBERSHIP_TYPE_CODE == "L"& MEMBERSHIP_STATUS_CODE== "C", .(ID_DEMO, ID_SPOUSE, FIRST_EVER_START_DATE)]
-current_life_members <- rbind(current_life_members[,.(ID_DEMO, FIRST_EVER_START_DATE)], current_life_members[,.(ID_SPOUSE, FIRST_EVER_START_DATE)], use.names=FALSE)[!is.na(ID_DEMO)]
+current_life_members <- indy_info_main[MEMBERSHIP_TYPE_CODE == "L"& MEMBERSHIP_STATUS_CODE== "C", .(ID_DEMO, FIRST_EVER_START_DATE)]
 current_life_members[, `:=`(yr = year(FIRST_EVER_START_DATE), mn = month(FIRST_EVER_START_DATE))]
 current_life_members[, FISCAL_YEAR := ifelse(mn > 6, yr, yr+1)]
 current_life_members <- current_life_members[,.(ID_DEMO, FISCAL_YEAR)]
 
-
-# from membership file
-mem_life <- membership_main[MEMBERSHIP_LEVEL %like% "Life",]
-mem_life <- rbind(mem_life[,.(ID_DEMO, FISCAL_YEAR)], mem_life[,.(ID_OF_RECORD_WITH_RELATIONSHIP, FISCAL_YEAR)], use.names=FALSE)[!is.na(ID_DEMO)]
-mem_life <- unique(mem_life)
-mem_life <- mem_life[,.(FISCAL_YEAR = min(as.numeric(FISCAL_YEAR))), .(ID_DEMO)]
-
-
 # for now, we will bind all these members into one big df
 
-current_life_members <- rbind(current_life_members, mem_life)
 current_life_members <- unique(current_life_members)
 
 # some people have two values, it might be the case that they are annual before life (we ony have first start date in indy, not first start of life)
@@ -233,8 +223,16 @@ last_5_avg_eng <- last_5_avg_eng[, .(UMN_event = mean(EVENT_ATTEND_ANNUAL),
 
 # join engagemnet scores with emails_events_membership dataframe - training
 training_df <- merge.data.table(last_5_avg_eng, emails_events_member, by = "ID_DEMO")
-
-
-
+# 
+# # checking if the ids in training df have spouses
+# spouse_df <- copy(indy_info_main)[,.(ID_DEMO, ID_SPOUSE)]
+# spouse_df <- merge.data.table(spouse_df, membership_TwoYearsAgo,
+#                               by.x='ID_SPOUSE', by.y='ID_DEMO', all.x=TRUE)
+# spouse_df <- spouse_df[, has_spouse:=ifelse(is.na(ID_SPOUSE), 0, 1)]
+# spouse_df <- spouse_df[, spouse_is_member:=ifelse(is.na(membership_TwoYearsAgo)|membership_TwoYearsAgo=='non_member', 0, 1)]
+# spouse_df <- spouse_df[, membership_TwoYearsAgo:=NULL][, ID_SPOUSE:=NULL]
+# 
+# training_df <- merge.data.table(training_df, spouse_df, all.x=TRUE)
+training_df <- training_df[complete.cases(training_df),]
 fwrite(training_df, "Ml files/new_member_training.csv", row.names = FALSE)
 
