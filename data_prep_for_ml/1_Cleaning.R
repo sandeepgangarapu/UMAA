@@ -1,5 +1,5 @@
 ## set working directory
-setwd('G:\\My Drive\\Research\\UMAA\\Data\\fresh_data\\raw_files')
+setwd('G:\\My Drive\\Research\\UMAA\\Data\\july_2021_data\\raw_files')
 
 
 ## Libraries used
